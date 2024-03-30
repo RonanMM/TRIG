@@ -1,0 +1,19 @@
+#!/bin/bash
+
+# Define the commands to be run in the background
+(
+    cd ~/Downloads
+    singularity run --nv tiago_noetic_opensource.sif local &
+    sleep 10 # Wait for Singularity to initialize (adjust time as needed)
+    roscore
+) &
+
+(
+    cd ~/Downloads
+    singularity run --nv tiago_noetic_opensource.sif roslaunch rosbridge_server rosbridge_websocket.launch
+) &
+
+(
+    cd ~/Downloads
+    singularity run --nv tiago_noetic_opensource.sif roslaunch tiago_2dnav_gazebo tiago_navigation.launch public_sim:=true world:=simple_office end_effector:=pal-gripper
+) &
