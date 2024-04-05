@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import ROSLIB from 'roslib';
+import { getRotationFromQuaternion } from './utils';
 
 const useRosConnection = (viewer, setAspectRatio, setRobotPose, setIsHovering) => {
     useEffect(() => {
@@ -35,6 +36,7 @@ const useRosConnection = (viewer, setAspectRatio, setRobotPose, setIsHovering) =
                     width: 600,
                     height: 600 / (message.info.width / message.info.height),
                 });
+                console.log("Viewer initialized", viewer.current);
 
                 const gridClient = new window.ROS2D.OccupancyGridClient({
                     ros: ros,
@@ -43,10 +45,13 @@ const useRosConnection = (viewer, setAspectRatio, setRobotPose, setIsHovering) =
                 });
 
                 gridClient.on('change', () => {
+                    console.log("Grid client received new data");
                     viewer.current.scaleToDimensions(gridClient.currentGrid.width, gridClient.currentGrid.height);
                     viewer.current.shift(gridClient.currentGrid.pose.position.x, gridClient.currentGrid.pose.position.y);
+                    //viewer.current.scene.update();
                 });
             }
+
         });
 
         amclPoseTopic.subscribe((message) => {

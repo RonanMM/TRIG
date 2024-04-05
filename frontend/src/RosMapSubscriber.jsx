@@ -3,7 +3,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import useRosConnection from './useRosConnection';
 import useMapEventListeners from './useMapEventListeners';
-import { getRotationFromQuaternion } from './utils';
+
 
 const RosMapSubscriber = () => {
     const viewer = useRef(null);
@@ -11,9 +11,13 @@ const RosMapSubscriber = () => {
     const robotMarker = useRef(null);
     const [isHovering, setIsHovering] = useState(false);
     const [aspectRatio, setAspectRatio] = useState(1);
+    const [currentZoom, setCurrentZoom] = useState(1);
+    const [currentPan, setCurrentPan] = useState({ x: 0, y: 0 });
 
     useRosConnection(viewer, setAspectRatio, setRobotPose, setIsHovering);
-    useMapEventListeners(isHovering, viewer, setIsHovering);
+    useMapEventListeners(viewer, isHovering, setIsHovering, setCurrentZoom, setCurrentPan);
+
+    
 
     useEffect(() => {
         if (viewer.current && window.ROS2D && robotPose) {
@@ -30,8 +34,15 @@ const RosMapSubscriber = () => {
             robotMarker.current.x = robotPose.x;
             robotMarker.current.y = -robotPose.y;
             robotMarker.current.rotation = robotPose.rotation;
+
+            if (viewer.current && viewer.current.scene) {
+                viewer.current.scene.scaleX = viewer.current.scene.scaleY = currentZoom;
+                viewer.current.scene.x = currentPan.x;
+                viewer.current.scene.y = currentPan.y;
+                viewer.current.scene.update();
+            }
         }
-    }, [robotPose]);
+    }, [robotPose, currentZoom, currentPan]);
 
     return (
         <div>
@@ -45,3 +56,4 @@ const RosMapSubscriber = () => {
 };
 
 export default RosMapSubscriber;
+
