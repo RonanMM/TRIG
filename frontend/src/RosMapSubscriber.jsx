@@ -20,6 +20,7 @@ const RosMapSubscriber = () => {
     
 
     useEffect(() => {
+        console.log("Robot pose updated:", robotPose);
         if (viewer.current && window.ROS2D && robotPose) {
             if (!robotMarker.current) {
                 robotMarker.current = new window.ROS2D.NavigationArrow({

@@ -79,4 +79,3 @@ roslaunch rosbridge_server rosbridge_websocket.launch
 roslaunch tiago_2dnav_gazebo tiago_navigation.launch public_sim:=true world:=simple_office
 roslaunch tiago_2dnav_gazebo tiago_mapping.launch public_sim:=true
 
-rosrun key_teleop key_teleop.py
