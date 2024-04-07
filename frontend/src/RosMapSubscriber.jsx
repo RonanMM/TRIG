@@ -36,14 +36,19 @@ const RosMapSubscriber = () => {
             robotMarker.current.y = -robotPose.y;
             robotMarker.current.rotation = robotPose.rotation;
 
-            if (viewer.current && viewer.current.scene) {
-                viewer.current.scene.scaleX = viewer.current.scene.scaleY = currentZoom;
-                viewer.current.scene.x = currentPan.x;
-                viewer.current.scene.y = currentPan.y;
-                viewer.current.scene.update();
-            }
+            // viewer.current.scene.scaleX = viewer.current.scene.scaleY = currentZoom;
+            // viewer.current.scene.x = currentPan.x;
+            // viewer.current.scene.y = currentPan.y;
+            // viewer.current.scene.update();
+
+            // if (viewer.current && viewer.current.scene) {
+            //     viewer.current.scene.scaleX = viewer.current.scene.scaleY = currentZoom;
+            //     viewer.current.scene.x = currentPan.x;
+            //     viewer.current.scene.y = currentPan.y;
+            //     viewer.current.scene.update();
+            // }
         }
-    }, [robotPose, currentZoom, currentPan]);
+    }, [robotPose, viewer.current, currentZoom, currentPan]);
 
     return (
         <div>

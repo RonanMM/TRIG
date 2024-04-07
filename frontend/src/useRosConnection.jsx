@@ -289,8 +289,8 @@ const useRosConnection = (viewer, setAspectRatio, setRobotPose, setIsHovering) =
             name: '/map',
             messageType: 'nav_msgs/OccupancyGrid'
         });
-
-        const mapCallback = (message) => {
+    
+        mapTopic.subscribe((message) => {
             console.log('Received map data:', message);
             setAspectRatio(message.info.width / message.info.height);
 
@@ -314,15 +314,15 @@ const useRosConnection = (viewer, setAspectRatio, setRobotPose, setIsHovering) =
                     viewer.current.shift(gridClient.currentGrid.pose.position.x, gridClient.currentGrid.pose.position.y);
                 });
             }
-        };
 
-        mapTopic.subscribe(mapCallback);
-
+        });
+    
         return () => {
             mapTopic.unsubscribe();
+            console.log("Unsubscribed from map topic");
         };
-    }, [ros, viewer, setAspectRatio]); 
-
+    }, [ros, viewer, setAspectRatio]); // Added setAspectRatio to dependencies to ensure re-subscription if it changes
+    
     useEffect(() => {
         const amclPoseTopic = new ROSLIB.Topic({
             ros,
@@ -330,19 +330,6 @@ const useRosConnection = (viewer, setAspectRatio, setRobotPose, setIsHovering) =
             messageType: 'geometry_msgs/PoseWithCovarianceStamped'
         });
     
-        // const poseCallback = (message) => {
-        //     console.log('Received AMCL pose data:', message);
-        //     const pose = message.pose.pose;
-        //     const newPosition = {
-        //         x: pose.position.x,
-        //         y: pose.position.y,
-        //         rotation: getRotationFromQuaternion(pose.orientation),
-        //     };
-        //     console.log('Updating robot pose:', newPosition);
-        //     setRobotPose(newPosition);
-        // };
-    
-        // amclPoseTopic.subscribe(poseCallback);
 
         amclPoseTopic.subscribe((message) => {
             console.log('Received AMCL pose data:', message);
@@ -356,7 +343,19 @@ const useRosConnection = (viewer, setAspectRatio, setRobotPose, setIsHovering) =
         }
         );
 
-        
+                // const poseCallback = (message) => {
+        //     console.log('Received AMCL pose data:', message);
+        //     const pose = message.pose.pose;
+        //     const newPosition = {
+        //         x: pose.position.x,
+        //         y: pose.position.y,
+        //         rotation: getRotationFromQuaternion(pose.orientation),
+        //     };
+        //     console.log('Updating robot pose:', newPosition);
+        //     setRobotPose(newPosition);
+        // };
+    
+        // amclPoseTopic.subscribe(poseCallback);
 
         
         
@@ -365,7 +364,7 @@ const useRosConnection = (viewer, setAspectRatio, setRobotPose, setIsHovering) =
             console.log('Unsubscribing from AMCL pose data.');
             amclPoseTopic.unsubscribe();
         };
-    }, [ros, setRobotPose]); // Include dependencies properly
+    }, [ros, viewer, setRobotPose]); // Include dependencies properly
     
     return null; // Since this is a hook, no JSX is returned.
 };
