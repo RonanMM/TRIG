@@ -1,8 +1,13 @@
 
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
+import ROSLIB from 'roslib';
+import { screenToMapCoordinates } from './utils';
 
-const useMapEventListeners = (viewerRef, isHovering, setIsHovering, setCurrentZoom, setCurrentPan) => {
+const useMapEventListeners = (viewerRef, mapData, isHovering, setIsHovering, setCurrentZoom, setCurrentPan, interactionMode, goalPublisher) => {
+
+
+
     useEffect(() => {
         const mapViewElement = document.getElementById('mapView');
 
@@ -27,7 +32,7 @@ const useMapEventListeners = (viewerRef, isHovering, setIsHovering, setCurrentZo
         let startingPosition = { x: 0, y: 0 };
 
         const startPan = (event) => {
-            if (!isHovering) return;
+            if (interactionMode !== 'PANNING' || !isHovering) return;
             isPanning = true;
             startingPosition = { x: event.clientX, y: event.clientY };
             event.preventDefault();
@@ -50,11 +55,34 @@ const useMapEventListeners = (viewerRef, isHovering, setIsHovering, setCurrentZo
             isPanning = false;
         };
 
+        const handleGoalSetting = (event) => {
+            if (interactionMode !== 'SETTING_GOAL') return;
+            if (!goalPublisher || !mapData.resolution) return;
+            const rect = mapViewElement.getBoundingClientRect();
+            const pixelX = event.clientX - rect.left;
+            const pixelY = event.clientY - rect.top;
+
+            console.log(`Received pixels: (${pixelX}, ${pixelY}), Origin: (${mapData.origin.x}, ${mapData.origin.y}), Resolution: ${mapData.resolution}`);
+
+            const { mapX, mapY } = screenToMapCoordinates(pixelX, pixelY, mapData.origin.x, mapData.origin.y, mapData.resolution);
+
+            console.log(`Converted Map Coordinates: (${mapX}, ${mapY})`);
+
+            const goal = new ROSLIB.Message({
+                header: { stamp: { secs: 0, nsecs: 0 }, frame_id: 'map' },
+                pose: { position: { x: mapX, y: mapY, z: 0 }, orientation: { x: 0, y: 0, z: 0, w: 1 } }
+            });
+
+            goalPublisher.publish(goal);
+            console.log(`Setting goal at (${mapX}, ${mapY})`);
+        };
+
         mapViewElement.addEventListener('wheel', handleZoom);
         mapViewElement.addEventListener('mousedown', startPan);
         mapViewElement.addEventListener('mousemove', pan);
         mapViewElement.addEventListener('mouseup', endPan);
         mapViewElement.addEventListener('mouseleave', endPan);
+        mapViewElement.addEventListener('click', handleGoalSetting);
 
         mapViewElement.addEventListener('mouseenter', () => setIsHovering(true));
         mapViewElement.addEventListener('mouseleave', () => {
@@ -68,11 +96,12 @@ const useMapEventListeners = (viewerRef, isHovering, setIsHovering, setCurrentZo
             mapViewElement.removeEventListener('mousemove', pan);
             mapViewElement.removeEventListener('mouseup', endPan);
             mapViewElement.removeEventListener('mouseleave', endPan);
+            mapViewElement.removeEventListener('click', handleGoalSetting);
 
             mapViewElement.removeEventListener('mouseenter', () => setIsHovering(true));
             mapViewElement.removeEventListener('mouseleave', () => setIsHovering(false));
         };
-    }, [viewerRef, isHovering, setIsHovering, setCurrentZoom, setCurrentPan]);
+    }, [viewerRef, mapData, isHovering, setIsHovering, setCurrentZoom, setCurrentPan, interactionMode, goalPublisher]);
 };
 
 export default useMapEventListeners;

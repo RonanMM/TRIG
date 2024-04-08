@@ -7,15 +7,17 @@ import useMapEventListeners from './useMapEventListeners';
 
 const RosMapSubscriber = () => {
     const viewer = useRef(null);
+    const [mapData, setMapData] = useState({});
+    const [interactionMode, setInteractionMode] = useState('PANNING');
     const [robotPose, setRobotPose] = useState({ x: 0, y: 0, rotation: 0 });
     const robotMarker = useRef(null);
     const [isHovering, setIsHovering] = useState(false);
-    const [aspectRatio, setAspectRatio] = useState(1);
     const [currentZoom, setCurrentZoom] = useState(1);
     const [currentPan, setCurrentPan] = useState({ x: 0, y: 0 });
+    const [goalPublisher, setGoalPublisher] = useState(null);
 
-    useRosConnection(viewer, setAspectRatio, setRobotPose, setIsHovering);
-    useMapEventListeners(viewer, isHovering, setIsHovering, setCurrentZoom, setCurrentPan);
+    useRosConnection(viewer, setMapData, setRobotPose, setIsHovering, setGoalPublisher);
+    useMapEventListeners(viewer, mapData, isHovering, setIsHovering, setCurrentZoom, setCurrentPan, interactionMode, goalPublisher);
 
     
 
@@ -36,25 +38,21 @@ const RosMapSubscriber = () => {
             robotMarker.current.y = -robotPose.y;
             robotMarker.current.rotation = robotPose.rotation;
 
-            // viewer.current.scene.scaleX = viewer.current.scene.scaleY = currentZoom;
-            // viewer.current.scene.x = currentPan.x;
-            // viewer.current.scene.y = currentPan.y;
-            // viewer.current.scene.update();
-
-            // if (viewer.current && viewer.current.scene) {
-            //     viewer.current.scene.scaleX = viewer.current.scene.scaleY = currentZoom;
-            //     viewer.current.scene.x = currentPan.x;
-            //     viewer.current.scene.y = currentPan.y;
-            //     viewer.current.scene.update();
-            // }
         }
     }, [robotPose, viewer.current, currentZoom, currentPan]);
+
+    const toggleInteractionMode = () => {
+        setInteractionMode(prevMode => prevMode === 'PANNING' ? 'SETTING_GOAL' : 'PANNING');
+    };
 
     return (
         <div>
             <h1>ROS Map Data</h1>
+            <button onClick={toggleInteractionMode}>
+                {interactionMode === 'PANNING' ? 'Switch to Setting Goal' : 'Switch to Panning'}
+            </button>
             <div
-                style={{ width: 600, height: 600 / aspectRatio, display: 'flex', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' }}
+                style={{ width: 600, height: 600 / (mapData.aspectRatio), display: 'flex', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' }}
                 id="mapView"
             ></div>
         </div>
