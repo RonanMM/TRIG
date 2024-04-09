@@ -102,7 +102,10 @@ const RosMapSubscriber = () => {
             <button onClick={toggleInteractionMode}>
                 {interactionMode === 'PANNING' ? 'Switch to Setting Goal' : 'Switch to Panning'}
             </button>
-            <div id="mapView" style={{ width: 600, height: 600 / (mapData.aspectRatio || 1), display: 'flex', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' }}></div>
+
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                <div id="mapView" style={{ width: 800, height: 800 / (mapData.aspectRatio || 1), overflow: 'hidden' }}></div>
+            </div>
         </div>
     );
 };

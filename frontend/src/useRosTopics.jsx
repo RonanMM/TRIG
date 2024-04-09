@@ -48,8 +48,8 @@ const useRosTopics = (ros, viewer, setMapData, setRobotPose, setIsHovering, setG
       if (window.ROS2D && !viewer.current) {
         viewer.current = new window.ROS2D.Viewer({
           divID: 'mapView',
-          width: 600,
-          height: 600 / (message.info.width / message.info.height),
+          width: 800,
+          height: 800 / (message.info.width / message.info.height),
         });
 
         const gridClient = new window.ROS2D.OccupancyGridClient({
