@@ -96,7 +96,6 @@ const RosMapSubscriber = () => {
 
     return (
         <div>
-            <h1>Tiago Map Data</h1>
             <div>Robot Coordinates: X: {robotPose.x.toFixed(2)}, Y: {robotPose.y.toFixed(2)}</div>
             <div>Goal Coordinates: X: {goalPose.x ? goalPose.x.toFixed(2) : 'Not set'}, Y: {goalPose.y ? goalPose.y.toFixed(2) : 'Not set'}</div>
             <button onClick={toggleInteractionMode}>
