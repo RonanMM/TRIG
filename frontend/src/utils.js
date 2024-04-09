@@ -34,26 +34,25 @@ export function addGoalMarker(viewer, goalX, goalY) {
 
     const polygonOptions = {
         lineSize: 0.3,
-        lineColor: window.createjs.Graphics.getRGB(0, 0, 255, 0.66), // Blue lines
+        lineColor: window.createjs.Graphics.getRGB(0, 0, 255, 0.66), 
         pointSize: 0.1,
-        pointColor: window.createjs.Graphics.getRGB(255, 0, 0, 0.66), // Red points
-        fillColor: window.createjs.Graphics.getRGB(0, 255, 0, 0.33) // Green fill
+        pointColor: window.createjs.Graphics.getRGB(255, 0, 0, 0.66), 
+
     };
 
     var polygonMarker = new window.ROS2D.PolygonMarker(polygonOptions);
     viewer.scene.addChild(polygonMarker);
 
-    // Adding points to define the shape of the goal marker
     polygonMarker.addPoint(new ROSLIB.Vector3({x: goalX, y: goalY + 0.1}));
     polygonMarker.addPoint(new ROSLIB.Vector3({x: goalX + 0.1, y: goalY}));
     polygonMarker.addPoint(new ROSLIB.Vector3({x: goalX, y: goalY - 0.1}));
     polygonMarker.addPoint(new ROSLIB.Vector3({x: goalX - 0.1, y: goalY}));
 
-    // Drawing the filled area
+
     polygonMarker.drawFill();
 
     currentPolygonMarker = polygonMarker;
 
-    //viewer.currentGoalMarker = polygonMarker;
+    viewer.currentGoalMarker = polygonMarker;
 }
 

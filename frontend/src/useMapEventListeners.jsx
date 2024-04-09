@@ -74,7 +74,7 @@ const useMapEventListeners = (
             goalPublisher.publish(goal);
             setGoalPose({ x: localCoords.x, y: localCoords.y });
             console.log(`Setting goal at (${localCoords.x}, ${localCoords.y})`);
-            setPath(null); // Clear the path state when setting a new goal
+            setPath(null);
         };
 
         mapViewElement.addEventListener('wheel', handleZoom);

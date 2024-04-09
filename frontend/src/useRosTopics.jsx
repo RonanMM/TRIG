@@ -66,9 +66,14 @@ const useRosTopics = (ros, viewer, setMapData, setRobotPose, setIsHovering, setG
     });
 
     pathTopic.subscribe((message) => {
-      console.log('Received path:', message);
+      if (!message || !message.pose) {
+          console.error("Received undefined or incorrect path data:", message);
+          setPath(message);
+          return;
+      }
+      console.log("Received valid path data:", message);
       setPath(message);
-    });
+  });
 
     return () => {
       mapTopic.unsubscribe();

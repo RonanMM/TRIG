@@ -52,12 +52,13 @@ const RosMapSubscriber = () => {
     // }, [goalPose]);
 
     useEffect(() => {
+
         if (viewer.current && window.ROS2D && robotPose) {
             if (!robotMarker.current) {
                 robotMarker.current = new window.ROS2D.NavigationArrow({
                     size: 0.5,
                     strokeSize: 0.05,
-                    fillColor: window.createjs.Graphics.getRGB(255, 0, 0, 0.66),
+                    fillColor: window.createjs.Graphics.getRGB(59, 51, 85, 0.8),
                     pulse: true,
                 });
                 viewer.current.scene.addChild(robotMarker.current);
@@ -77,13 +78,16 @@ const RosMapSubscriber = () => {
                 viewer.current.scene.addChild(pathShape.current);
             }
             pathShape.current.setPath(path);
+
         } else if (pathShape.current) {
             viewer.current.scene.removeChild(pathShape.current);
-            pathShape.current = null; // Ensure to reset the reference
+            pathShape.current = null; 
         }
+
         if (viewer.current && goalPose.x !== null && goalPose.y !== null) {
             addGoalMarker(viewer.current, goalPose.x, goalPose.y);
         }
+
     }, [robotPose, path, viewer.current, goalPose]);
 
     const toggleInteractionMode = () => {
