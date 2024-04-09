@@ -45,11 +45,11 @@ const RosMapSubscriber = () => {
         setPath
     );
 
-    useEffect(() => {
-        if (viewer.current && goalPose.x !== null && goalPose.y !== null) {
-            addGoalMarker(viewer.current, goalPose.x, goalPose.y);
-        }
-    }, [goalPose]);
+    // useEffect(() => {
+    //     if (viewer.current && goalPose.x !== null && goalPose.y !== null) {
+    //         addGoalMarker(viewer.current, goalPose.x, goalPose.y);
+    //     }
+    // }, [goalPose]);
 
     useEffect(() => {
         if (viewer.current && window.ROS2D && robotPose) {
@@ -81,7 +81,10 @@ const RosMapSubscriber = () => {
             viewer.current.scene.removeChild(pathShape.current);
             pathShape.current = null; // Ensure to reset the reference
         }
-    }, [robotPose, path, viewer.current]);
+        if (viewer.current && goalPose.x !== null && goalPose.y !== null) {
+            addGoalMarker(viewer.current, goalPose.x, goalPose.y);
+        }
+    }, [robotPose, path, viewer.current, goalPose]);
 
     const toggleInteractionMode = () => {
         setInteractionMode(prevMode => prevMode === 'PANNING' ? 'SETTING_GOAL' : 'PANNING');

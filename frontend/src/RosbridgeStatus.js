@@ -5,16 +5,44 @@ import ROSLIB from 'roslib';
 import './RosbridgeStatus.css';
 
 const RosbridgeStatus = () => {
-    const [allStats, setAllStats] = useState('disconnected');
-    const [roslibStatus, setRoslibStatus] = useState('disconnected');
-    const [rosbridgeStatus, setRosbridgeStatus] = useState('disconnected');
-    const [rosMapStatus, setRosMapStatus] = useState('disconnected');
-    const [amclDataStatus, setAmclDataStatus] = useState('disconnected');
-    const [mapDataStatus, setMapDataStatus] = useState('disconnected');
-    const [mapInitialized, setMapInitialized] = useState(false);
+    const [roslibStatus, setRoslibStatus] = useState('Disconnected');
+    const [rosbridgeStatus, setRosbridgeStatus] = useState('Disconnected');
+    const [amclDataStatus, setAmclDataStatus] = useState('Not receiving');
+    const [mapDataStatus, setMapDataStatus] = useState('Not receiving');
+    const [goalDataStatus, setGoalDataStatus] = useState('Not receiving');
+    const [pathDataStatus, setPathDataStatus] = useState('Not receiving'); 
+    const [networkLatency, setNetworkLatency] = useState('N/A');
+    const [allServicesUp, setAllServicesUp] = useState(false);
 
-    const checkStatus= useCallback(()  => {
+    const checkStatus = useCallback(() => {
         const ros = new ROSLIB.Ros({ url: 'ws://localhost:9090' });
+
+        ros.on('connection', () => {
+            console.log('Connected to ROS bridge.');
+            setRoslibStatus('Connected');
+            setRosbridgeStatus('Connected');
+            measureLatency(ros);
+        });
+
+        ros.on('error', (error) => {
+            console.error('Error connecting to websocket server:', error);
+            setRoslibStatus('Error');
+            setRosbridgeStatus('Error');
+            setAmclDataStatus('Error');
+            setMapDataStatus('Error');
+            setGoalDataStatus('Error');
+            setPathDataStatus('Error'); 
+        });
+
+        ros.on('close', () => {
+            console.log('Connection to ROS bridge closed.');
+            setRoslibStatus('Disconnected');
+            setRosbridgeStatus('Disconnected');
+            setAmclDataStatus('Disconnected');
+            setMapDataStatus('Disconnected');
+            setGoalDataStatus('Disconnected');
+            setPathDataStatus('Disconnected'); 
+        });
 
         const amclTopic = new ROSLIB.Topic({
             ros,
@@ -28,86 +56,96 @@ const RosbridgeStatus = () => {
             messageType: 'nav_msgs/OccupancyGrid'
         });
 
-        ros.on('connection', () => {
-            setRoslibStatus('connected');
-            setRosbridgeStatus('connected');
-            amclTopic.subscribe(() => {
-                setAmclDataStatus('receiving');
-            });
-            mapTopic.subscribe(() => {
-                setMapDataStatus('receiving');
-                setMapInitialized(true); 
-            });
+        const goalTopic = new ROSLIB.Topic({
+            ros,
+            name: '/move_base_simple/goal',
+            messageType: 'geometry_msgs/PoseStamped'
         });
 
-        ros.on('error', (error) => {
-            console.error('Error connecting to websocket server:', error);
-            setRoslibStatus('error');
-            setRosbridgeStatus('error');
-            setAmclDataStatus('error');
-            setMapDataStatus('error');
+        const pathTopic = new ROSLIB.Topic({
+            ros,
+            name: '/move_base/GlobalPlanner/plan', 
+            messageType: 'nav_msgs/Path'
         });
 
-        ros.on('close', () => {
-            setRoslibStatus('disconnected');
-            setRosbridgeStatus('disconnected');
-            setAmclDataStatus('disconnected');
-            setMapDataStatus('disconnected');
-            setMapInitialized(false);
+        amclTopic.subscribe(() => {
+            setAmclDataStatus('Receiving data');
+        });
+
+        mapTopic.subscribe(() => {
+            setMapDataStatus('Receiving data');
+        });
+
+        goalTopic.subscribe(() => {
+            setGoalDataStatus('Receiving data');
+        });
+
+        pathTopic.subscribe(() => {
+            setPathDataStatus('Receiving data'); 
         });
 
         return () => {
-            ros.close();
             amclTopic.unsubscribe();
             mapTopic.unsubscribe();
+            goalTopic.unsubscribe();
+            pathTopic.unsubscribe();
+            ros.close();
         };
     }, []);
 
     useEffect(() => {
-        return checkStatus(); 
+        checkStatus(); 
     }, [checkStatus]);
 
     useEffect(() => {
-        if (roslibStatus === 'connected' && rosbridgeStatus === 'connected' && amclDataStatus === 'receiving' && mapDataStatus === 'receiving') {
-            setAllStats('All services up and running');
+        if (roslibStatus === 'Connected' && rosbridgeStatus === 'Connected' &&
+            amclDataStatus === 'Receiving data' && mapDataStatus === 'Receiving data' 
+            // && goalDataStatus === 'Receiving data' && pathDataStatus === 'Receiving data'
+        ) {
+            setAllServicesUp(true);
         } else {
-            setAllStats('disconnected');
+            setAllServicesUp(false);
         }
-    }, [roslibStatus, rosbridgeStatus, amclDataStatus, mapDataStatus]);
+    }, [roslibStatus, rosbridgeStatus, amclDataStatus, mapDataStatus, goalDataStatus, pathDataStatus]);
+
+    const measureLatency = (ros) => {
+        const startTime = Date.now();
+        ros.getParams(() => {
+            const latency = Date.now() - startTime;
+            setNetworkLatency(`${latency} ms`);
+        });
+    };
 
     return (
         <div>
             <h1>Tiago Interface Server Status</h1>
-            <div className={`status-header ${allStats === 'All services up and running' ? 'connected' : 'disconnected'}`}>
-                <span>{allStats}</span>
+            <div className="latency-display">
+                <span>Network Latency: {networkLatency}</span>
             </div>
-            <div className="status-container">
-                <div className={`status-indicator ${roslibStatus}`}></div>
-                <span className="status-label">ROSLIB.js Status</span>
+            <div className={`status-header ${allServicesUp ? 'connected' : 'disconnected'}`}>
+                <span>All Services Status: {allServicesUp ? 'Up and Running' : 'Issues Detected'}</span>
             </div>
-            <div className="status-container">
-                <div className={`status-indicator ${rosbridgeStatus}`}></div>
-                <span className="status-label">rosbridge Connection</span>
-            </div>
-            {/* <div className="status-container">
-                <div className={`status-indicator ${rosMapStatus}`}></div>
-                <span className="status-label">Ros Map Component</span>
-            </div> */}
-            <div className="status-container">
-                <div className={`status-indicator ${amclDataStatus}`}></div>
-                <span className="status-label">AMCL Data Reception</span>
-            </div>
-            <div className="status-container">
-                <div className={`status-indicator ${mapDataStatus}`}></div>
-                <span className="status-label">Map Data Reception</span>
-            </div>
-            <div className="status-container">
-                <div className={`status-indicator ${mapInitialized ? 'connected' : 'disconnected'}`}></div>
-                <span className="status-label">Map Initialization</span>
-            </div>
-            <button onClick={checkStatus}>Refresh Status</button>
+            {renderStatusIndicator(roslibStatus, "ROSLIB.js Status")}
+            {renderStatusIndicator(rosbridgeStatus, "Rosbridge Connection")}
+            {renderStatusIndicator(amclDataStatus, "AMCL Data Reception")}
+            {renderStatusIndicator(mapDataStatus, "Map Data Reception")}
+            {renderStatusIndicator(goalDataStatus, "Goal Data Reception")}
+            {renderStatusIndicator(pathDataStatus, "Path Data Reception")}
+
         </div>
     );
 };
+
+function renderStatusIndicator(status, label) {
+    const statusClass = status === 'Receiving data' ? 'connected' :
+                        status.includes('Not receiving') ? 'not-receiving' :
+                        status.toLowerCase();
+    return (
+        <div className="status-container">
+            <div className={`status-indicator ${statusClass}`}></div>
+            <span className="status-label">{label}: {status}</span>
+        </div>
+    );
+}
 
 export default RosbridgeStatus;
