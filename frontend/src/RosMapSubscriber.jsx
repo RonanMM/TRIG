@@ -91,11 +91,6 @@ const RosMapSubscriber = () => {
 
     }, [robotPose, path, viewer.current, goalPose]);
 
-    
-    const toggleInteractionMode = (mode) => {
-        setInteractionMode(mode);
-    };
-
     return (
 
         <div>
