@@ -9,7 +9,6 @@ const RosbridgeStatus = () => {
     const [rosbridgeStatus, setRosbridgeStatus] = useState('Disconnected');
     const [amclDataStatus, setAmclDataStatus] = useState('Not receiving');
     const [mapDataStatus, setMapDataStatus] = useState('Not receiving');
-    const [goalDataStatus, setGoalDataStatus] = useState('Not receiving');
     const [pathDataStatus, setPathDataStatus] = useState('Not receiving'); 
     const [networkLatency, setNetworkLatency] = useState('N/A');
     const [allServicesUp, setAllServicesUp] = useState(false);
@@ -30,7 +29,6 @@ const RosbridgeStatus = () => {
             setRosbridgeStatus('Error');
             setAmclDataStatus('Error');
             setMapDataStatus('Error');
-            setGoalDataStatus('Error');
             setPathDataStatus('Error'); 
         });
 
@@ -40,7 +38,6 @@ const RosbridgeStatus = () => {
             setRosbridgeStatus('Disconnected');
             setAmclDataStatus('Disconnected');
             setMapDataStatus('Disconnected');
-            setGoalDataStatus('Disconnected');
             setPathDataStatus('Disconnected'); 
         });
 
@@ -54,12 +51,6 @@ const RosbridgeStatus = () => {
             ros,
             name: '/map',
             messageType: 'nav_msgs/OccupancyGrid'
-        });
-
-        const goalTopic = new ROSLIB.Topic({
-            ros,
-            name: '/move_base_simple/goal',
-            messageType: 'geometry_msgs/PoseStamped'
         });
 
         const pathTopic = new ROSLIB.Topic({
@@ -76,9 +67,6 @@ const RosbridgeStatus = () => {
             setMapDataStatus('Receiving data');
         });
 
-        goalTopic.subscribe(() => {
-            setGoalDataStatus('Receiving data');
-        });
 
         pathTopic.subscribe(() => {
             setPathDataStatus('Receiving data'); 
@@ -87,7 +75,6 @@ const RosbridgeStatus = () => {
         return () => {
             amclTopic.unsubscribe();
             mapTopic.unsubscribe();
-            goalTopic.unsubscribe();
             pathTopic.unsubscribe();
             ros.close();
         };
@@ -100,13 +87,13 @@ const RosbridgeStatus = () => {
     useEffect(() => {
         if (roslibStatus === 'Connected' && rosbridgeStatus === 'Connected' &&
             amclDataStatus === 'Receiving data' && mapDataStatus === 'Receiving data' 
-            // && goalDataStatus === 'Receiving data' && pathDataStatus === 'Receiving data'
+        
         ) {
             setAllServicesUp(true);
         } else {
             setAllServicesUp(false);
         }
-    }, [roslibStatus, rosbridgeStatus, amclDataStatus, mapDataStatus, goalDataStatus, pathDataStatus]);
+    }, [roslibStatus, rosbridgeStatus, amclDataStatus, mapDataStatus, pathDataStatus]);
 
     const measureLatency = (ros) => {
         const startTime = Date.now();
@@ -129,7 +116,6 @@ const RosbridgeStatus = () => {
             {renderStatusIndicator(rosbridgeStatus, "Rosbridge Connection")}
             {renderStatusIndicator(amclDataStatus, "AMCL Data Reception")}
             {renderStatusIndicator(mapDataStatus, "Map Data Reception")}
-            {renderStatusIndicator(goalDataStatus, "Goal Data Reception")}
             {renderStatusIndicator(pathDataStatus, "Path Data Reception")}
 
         </div>

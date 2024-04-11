@@ -19,7 +19,7 @@ const App = () => {
         <div>
             {currentPage === 'home' && (
                 <div>
-                    <h1>Tiago Map Interface</h1>
+                    <h1>Tiago Robot Interface GUI</h1>
                     <button onClick={navigateToStatus}>Go to Status Page</button>
                     <RosMapSubscriber /> {/* Include the map subscriber */}
 

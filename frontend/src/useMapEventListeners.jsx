@@ -8,11 +8,14 @@ const useMapEventListeners = (
     isHovering, 
     setIsHovering, 
     setCurrentZoom, 
+
     setCurrentPan, 
+
     interactionMode, 
     goalPublisher,
     setGoalPose,
-    setPath
+    setPath,
+
 ) => {
     useEffect(() => {
         const mapViewElement = document.getElementById('mapView');
@@ -57,6 +60,7 @@ const useMapEventListeners = (
             isPanning = false;
         };
 
+
         const handleGoalSetting = (event) => {
             if (interactionMode !== 'SETTING_GOAL') return;
             if (!goalPublisher || !mapData.resolution) return;
@@ -77,12 +81,14 @@ const useMapEventListeners = (
             setPath(null);
         };
 
+
         mapViewElement.addEventListener('wheel', handleZoom);
         mapViewElement.addEventListener('mousedown', startPan);
         mapViewElement.addEventListener('mousemove', pan);
         mapViewElement.addEventListener('mouseup', endPan);
         mapViewElement.addEventListener('mouseleave', endPan);
         mapViewElement.addEventListener('click', handleGoalSetting);
+        
         mapViewElement.addEventListener('mouseenter', () => setIsHovering(true));
         mapViewElement.addEventListener('mouseleave', () => {
             setIsHovering(false);
@@ -105,11 +111,14 @@ const useMapEventListeners = (
         isHovering, 
         setIsHovering, 
         setCurrentZoom, 
+
         setCurrentPan, 
+
         interactionMode, 
         goalPublisher, 
         setGoalPose,
-        setPath
+        setPath,
+
     ]);
 };
 
