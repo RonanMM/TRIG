@@ -20,6 +20,7 @@ const RosMapSubscriber = () => {
     const [currentPan, setCurrentPan] = useState({ x: 0, y: 0 });
     const [goalPublisher, setGoalPublisher] = useState(null);
     const [path, setPath] = useState(null);
+    const [noGoZones, setNoGoZones] = useState([]);
 
 
     const ros = useStableRosConnection('ws://localhost:9090');
@@ -47,6 +48,7 @@ const RosMapSubscriber = () => {
         goalPublisher,
         setGoalPose,
         setPath,
+        setNoGoZones
 
     );
 
@@ -89,6 +91,11 @@ const RosMapSubscriber = () => {
 
     }, [robotPose, path, viewer.current, goalPose]);
 
+    
+    const toggleInteractionMode = (mode) => {
+        setInteractionMode(mode);
+    };
+
     return (
 
         <div>
@@ -102,6 +109,9 @@ const RosMapSubscriber = () => {
                 </button>
                 <button className={`button ${interactionMode === 'SETTING_GOAL' ? 'active' : ''}`} onClick={() => setInteractionMode('SETTING_GOAL')}>
                     🎯 Set Goal
+                </button>
+                <button className={`button ${interactionMode === 'DRAWING_RECTANGLE' ? 'active' : ''}`} onClick={() => setInteractionMode('DRAWING_RECTANGLE')}>
+                    🖍 Draw Rectangle
                 </button>
 
             </div>

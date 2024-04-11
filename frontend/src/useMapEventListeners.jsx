@@ -15,6 +15,7 @@ const useMapEventListeners = (
     goalPublisher,
     setGoalPose,
     setPath,
+    setNoGoZones
 
 ) => {
     useEffect(() => {
@@ -81,12 +82,62 @@ const useMapEventListeners = (
             setPath(null);
         };
 
+        let isDragging = false;
+        let startDragPosition = { x: 0, y: 0 };
+        let currentRectangle = null;
+
+        const startDrag = (event) => {
+            if (interactionMode !== 'DRAWING_RECTANGLE' || !isHovering) return;
+            isDragging = true;
+            startDragPosition = { x: event.clientX, y: event.clientY };
+            event.preventDefault();
+        }
+
+        const drag = (event) => {
+            if (interactionMode !== 'DRAWING_RECTANGLE' || !isHovering) return;
+            isDragging = true;
+            const rect = mapViewElement.getBoundingClientRect();
+            const pixelX = event.clientX - rect.left;
+            const pixelY = event.clientY - rect.top;
+            const dragCoords = viewerRef.current.scene.globalToRos(pixelX, pixelY);
+            startDragPosition = {
+                x: dragCoords.x,
+                y: dragCoords.y
+            };
+            currentRectangle = { start: startDragPosition, end: startDragPosition };
+            event.preventDefault();
+        };
+
+        const endDrag = () => {
+            if (!isDragging || interactionMode !== 'DRAWING_RECTANGLE') return;
+            setNoGoZones(zones => [...zones, currentRectangle]);
+            console.log('Rectangle:', currentRectangle);
+            isDragging = false;
+            currentRectangle = null
+ 
+
+            // send the rectangle to the backend
+            // currentRectangle.start and currentRectangle.end
+        }
 
         mapViewElement.addEventListener('wheel', handleZoom);
-        mapViewElement.addEventListener('mousedown', startPan);
-        mapViewElement.addEventListener('mousemove', pan);
-        mapViewElement.addEventListener('mouseup', endPan);
-        mapViewElement.addEventListener('mouseleave', endPan);
+        mapViewElement.addEventListener('mousedown', (event) => {
+            startPan(event);
+            startDrag(event);
+        });
+        mapViewElement.addEventListener('mousemove', (event) => {
+            pan(event);
+            drag(event);
+        });
+        mapViewElement.addEventListener('mouseup', (event) => {
+            endPan();
+            endDrag();
+        });
+        mapViewElement.addEventListener('mouseleave', (event) => {
+            endPan();
+            endDrag();
+        });
+        
         mapViewElement.addEventListener('click', handleGoalSetting);
         
         mapViewElement.addEventListener('mouseenter', () => setIsHovering(true));
@@ -118,6 +169,7 @@ const useMapEventListeners = (
         goalPublisher, 
         setGoalPose,
         setPath,
+        setNoGoZones
 
     ]);
 };
