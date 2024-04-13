@@ -8,6 +8,7 @@ const RosbridgeStatus = () => {
     const [roslibStatus, setRoslibStatus] = useState('Disconnected');
     const [rosbridgeStatus, setRosbridgeStatus] = useState('Disconnected');
     const [amclDataStatus, setAmclDataStatus] = useState('Not receiving');
+    const [robotPoseStatus, setRobotPoseStatus] = useState('Not receiving');
     const [mapDataStatus, setMapDataStatus] = useState('Not receiving');
     const [pathDataStatus, setPathDataStatus] = useState('Not receiving'); 
     const [networkLatency, setNetworkLatency] = useState('N/A');
@@ -28,6 +29,7 @@ const RosbridgeStatus = () => {
             setRoslibStatus('Error');
             setRosbridgeStatus('Error');
             setAmclDataStatus('Error');
+            setRobotPoseStatus('Error');
             setMapDataStatus('Error');
             setPathDataStatus('Error'); 
         });
@@ -37,6 +39,7 @@ const RosbridgeStatus = () => {
             setRoslibStatus('Disconnected');
             setRosbridgeStatus('Disconnected');
             setAmclDataStatus('Disconnected');
+            setRobotPoseStatus('Disconnected');
             setMapDataStatus('Disconnected');
             setPathDataStatus('Disconnected'); 
         });
@@ -44,6 +47,12 @@ const RosbridgeStatus = () => {
         const amclTopic = new ROSLIB.Topic({
             ros,
             name: '/amcl_pose',
+            messageType: 'geometry_msgs/PoseWithCovarianceStamped'
+        });
+
+        const robotPoseTopic = new ROSLIB.Topic({
+            ros,
+            name: '/robot_pose',
             messageType: 'geometry_msgs/PoseWithCovarianceStamped'
         });
 
@@ -67,6 +76,11 @@ const RosbridgeStatus = () => {
             setMapDataStatus('Receiving data');
         });
 
+        robotPoseTopic.subscribe(() => {
+            setRobotPoseStatus('Receiving data');
+        });
+
+
 
         pathTopic.subscribe(() => {
             setPathDataStatus('Receiving data'); 
@@ -74,6 +88,7 @@ const RosbridgeStatus = () => {
 
         return () => {
             amclTopic.unsubscribe();
+            robotPoseTopic.unsubscribe();
             mapTopic.unsubscribe();
             pathTopic.unsubscribe();
             ros.close();
@@ -86,7 +101,8 @@ const RosbridgeStatus = () => {
 
     useEffect(() => {
         if (roslibStatus === 'Connected' && rosbridgeStatus === 'Connected' &&
-            amclDataStatus === 'Receiving data' && mapDataStatus === 'Receiving data' 
+             mapDataStatus === 'Receiving data' &&
+            (robotPoseStatus === 'Receiving data' || amclDataStatus === 'Receiving data') 
         
         ) {
             setAllServicesUp(true);
@@ -115,6 +131,7 @@ const RosbridgeStatus = () => {
             {renderStatusIndicator(roslibStatus, "ROSLIB.js Status")}
             {renderStatusIndicator(rosbridgeStatus, "Rosbridge Connection")}
             {renderStatusIndicator(amclDataStatus, "AMCL Data Reception")}
+            {renderStatusIndicator(robotPoseStatus, "Robot Pose Reception")}
             {renderStatusIndicator(mapDataStatus, "Map Data Reception")}
             {renderStatusIndicator(pathDataStatus, "Path Data Reception")}
 

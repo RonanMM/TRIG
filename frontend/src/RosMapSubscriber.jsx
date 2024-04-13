@@ -185,7 +185,7 @@ const RosMapSubscriber = () => {
                     />
                 </div>
                 <div className="right-section">
-                    <div id="mapView" style={{width: 600, height: 600 / (mapData.aspectRatio || 1), overflow: 'hidden'  }}></div>
+                    <div id="mapView" style={{}}></div>
                 </div>
             </div>
         </div>
