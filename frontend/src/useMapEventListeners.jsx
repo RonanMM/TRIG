@@ -1,22 +1,21 @@
 
 
+
 import { useEffect } from 'react';
 
 const useMapEventListeners = (
-    viewerRef, 
-    mapData, 
-    isHovering, 
-    setIsHovering, 
-    setCurrentZoom, 
-
-    setCurrentPan, 
-
-    interactionMode, 
+    viewerRef,
+    mapData,
+    isHovering,
+    setIsHovering,
+    setCurrentZoom,
+    setCurrentPan,
+    interactionMode,
     goalPublisher,
     setGoalPose,
     setPath,
-    setNoGoZones
-
+    setNoGoZones,
+    setPolygonMarkers
 ) => {
     useEffect(() => {
         const mapViewElement = document.getElementById('mapView');
@@ -24,6 +23,9 @@ const useMapEventListeners = (
             console.error('Map view element not found');
             return;
         }
+
+
+
 
         const handleZoom = (event) => {
             event.preventDefault();
@@ -35,6 +37,11 @@ const useMapEventListeners = (
                 setCurrentZoom(scale);
             }
         };
+
+
+
+
+
 
         let isPanning = false;
         let startingPosition = { x: 0, y: 0 };
@@ -62,6 +69,9 @@ const useMapEventListeners = (
         };
 
 
+
+
+
         const handleGoalSetting = (event) => {
             if (interactionMode !== 'SETTING_GOAL') return;
             if (!goalPublisher || !mapData.resolution) return;
@@ -69,8 +79,6 @@ const useMapEventListeners = (
             const pixelX = event.clientX - rect.left;
             const pixelY = event.clientY - rect.top;
             const localCoords = viewerRef.current.scene.globalToRos(pixelX, pixelY);
-            console.log(`Received pixels: (${pixelX}, ${pixelY}), Origin: (${mapData.origin.x}, ${mapData.origin.y}), Resolution: ${mapData.resolution}`);
-
             const goal = new window.ROSLIB.Message({
                 header: { stamp: { secs: 0, nsecs: 0 }, frame_id: 'map' },
                 pose: { position: { x: localCoords.x, y: localCoords.y, z: 0 }, orientation: { x: 0, y: 0, z: 0, w: 1 } }
@@ -78,99 +86,113 @@ const useMapEventListeners = (
 
             goalPublisher.publish(goal);
             setGoalPose({ x: localCoords.x, y: localCoords.y });
-            console.log(`Setting goal at (${localCoords.x}, ${localCoords.y})`);
             setPath(null);
         };
 
-        let isDragging = false;
-        let startDragPosition = { x: 0, y: 0 };
-        let currentRectangle = null;
 
-        const startDrag = (event) => {
-            if (interactionMode !== 'DRAWING_RECTANGLE' || !isHovering) return;
-            isDragging = true;
-            startDragPosition = { x: event.clientX, y: event.clientY };
-            event.preventDefault();
-        }
 
-        const drag = (event) => {
-            if (interactionMode !== 'DRAWING_RECTANGLE' || !isHovering) return;
-            isDragging = true;
+
+
+        let isDrawingPolygon = false;
+        let polygonPoints = [];
+        let polygonPointsCopy = [];
+
+        const startPolygon = (event) => {
+            if (interactionMode !== 'DRAWING_POLYGON' || !isHovering) return;
+            isDrawingPolygon = true;
+
             const rect = mapViewElement.getBoundingClientRect();
             const pixelX = event.clientX - rect.left;
             const pixelY = event.clientY - rect.top;
-            const dragCoords = viewerRef.current.scene.globalToRos(pixelX, pixelY);
-            startDragPosition = {
-                x: dragCoords.x,
-                y: dragCoords.y
-            };
-            currentRectangle = { start: startDragPosition, end: startDragPosition };
+            const startCoords = viewerRef.current.scene.globalToRos(pixelX, pixelY);
+            polygonPoints = [new window.ROSLIB.Vector3({ x: startCoords.x, y: startCoords.y, z: 0 })];
+            polygonPointsCopy = [startCoords];
+
+            console.log('Starting polygon:', polygonPoints);
+
             event.preventDefault();
         };
 
-        const endDrag = () => {
-            if (!isDragging || interactionMode !== 'DRAWING_RECTANGLE') return;
-            setNoGoZones(zones => [...zones, currentRectangle]);
-            console.log('Rectangle:', currentRectangle);
-            isDragging = false;
-            currentRectangle = null
- 
+        const endPolygon = (event) => {
+            if (!isDrawingPolygon) return;
+            const rect = mapViewElement.getBoundingClientRect();
+            const pixelX = event.clientX - rect.left;
+            const pixelY = event.clientY - rect.top;
+            const endCoords = viewerRef.current.scene.globalToRos(pixelX, pixelY);
+            polygonPointsCopy.push(endCoords);
 
-            // send the rectangle to the backend
-            // currentRectangle.start and currentRectangle.end
-        }
+            polygonPoints.push(new window.ROSLIB.Vector3({ x: polygonPointsCopy[0].x, y: polygonPointsCopy[1].y, z: 0 }));
+
+            polygonPoints.push(new window.ROSLIB.Vector3({ x: endCoords.x, y: endCoords.y, z: 0 }));
+
+            polygonPoints.push(new window.ROSLIB.Vector3({ x: polygonPointsCopy[1].x, y: polygonPointsCopy[0].y, z: 0 }));
+
+            // console.log('Final polygon points before adding to state:', polygonPoints);
+
+            // console.log('Final polygon points before adding to state:', polygonPoints.map(p => ({ x: p.x, y: p.y, z: p.z })));
+        
+            const newPolygonPoints = polygonPoints.map(p => ({ x: p.x, y: p.y, z: p.z }));
+            setNoGoZones(prev => [...prev, { points: newPolygonPoints }]);
+
+            
+        
+            isDrawingPolygon = false;
+            polygonPoints = [];
+            polygonPointsCopy = [];
+
+        };
+        
+
+
+
+        
 
         mapViewElement.addEventListener('wheel', handleZoom);
-        mapViewElement.addEventListener('mousedown', (event) => {
-            startPan(event);
-            startDrag(event);
-        });
-        mapViewElement.addEventListener('mousemove', (event) => {
-            pan(event);
-            drag(event);
-        });
-        mapViewElement.addEventListener('mouseup', (event) => {
-            endPan();
-            endDrag();
-        });
-        mapViewElement.addEventListener('mouseleave', (event) => {
-            endPan();
-            endDrag();
-        });
-        
         mapViewElement.addEventListener('click', handleGoalSetting);
-        
         mapViewElement.addEventListener('mouseenter', () => setIsHovering(true));
         mapViewElement.addEventListener('mouseleave', () => {
             setIsHovering(false);
             endPan();
+            endPolygon();
         });
+
+        if (interactionMode === 'PANNING') {
+            mapViewElement.addEventListener('mousedown', startPan);
+            mapViewElement.addEventListener('mousemove', pan);
+            mapViewElement.addEventListener('mouseup', endPan);
+            mapViewElement.addEventListener('mouseleave', endPan);
+        } else if (interactionMode === 'DRAWING_POLYGON') {
+            mapViewElement.addEventListener('mousedown', startPolygon);
+            mapViewElement.addEventListener('mouseup', endPolygon);
+            mapViewElement.addEventListener('mouseleave', endPolygon);
+        }
 
         return () => {
             mapViewElement.removeEventListener('wheel', handleZoom);
+            mapViewElement.removeEventListener('click', handleGoalSetting);
+            mapViewElement.removeEventListener('mouseenter', () => setIsHovering(true));
+            mapViewElement.removeEventListener('mouseleave', () => setIsHovering(false));
             mapViewElement.removeEventListener('mousedown', startPan);
             mapViewElement.removeEventListener('mousemove', pan);
             mapViewElement.removeEventListener('mouseup', endPan);
             mapViewElement.removeEventListener('mouseleave', endPan);
-            mapViewElement.removeEventListener('click', handleGoalSetting);
-            mapViewElement.removeEventListener('mouseenter', () => setIsHovering(true));
-            mapViewElement.removeEventListener('mouseleave', () => setIsHovering(false));
-        };
+            mapViewElement.removeEventListener('mousedown', startPolygon);
+            mapViewElement.removeEventListener('mouseup', endPolygon);
+            mapViewElement.removeEventListener('mouseleave', endPolygon);
+        }
     }, [
         viewerRef,
-        mapData, 
-        isHovering, 
-        setIsHovering, 
-        setCurrentZoom, 
-
-        setCurrentPan, 
-
-        interactionMode, 
-        goalPublisher, 
+        mapData,
+        isHovering,
+        setIsHovering,
+        setCurrentZoom,
+        setCurrentPan,
+        interactionMode,
+        goalPublisher,
         setGoalPose,
         setPath,
-        setNoGoZones
-
+        setNoGoZones,
+        setPolygonMarkers
     ]);
 };
 
