@@ -2,6 +2,7 @@
 
 
 import { useEffect } from 'react';
+import jsyaml from 'js-yaml';
 
 const useMapEventListeners = (
     viewerRef,
@@ -14,17 +15,19 @@ const useMapEventListeners = (
     goalPublisher,
     setGoalPose,
     setPath,
+    noGoZones,
     setNoGoZones,
-    setPolygonMarkers
+    setPolygonMarkers,
+    yamlLog,
+    setYamlLog
 ) => {
+
     useEffect(() => {
         const mapViewElement = document.getElementById('mapView');
         if (!mapViewElement) {
             console.error('Map view element not found');
             return;
         }
-
-
 
 
         const handleZoom = (event) => {
@@ -67,8 +70,6 @@ const useMapEventListeners = (
         const endPan = () => {
             isPanning = false;
         };
-
-
 
 
 
@@ -127,13 +128,32 @@ const useMapEventListeners = (
 
             polygonPoints.push(new window.ROSLIB.Vector3({ x: polygonPointsCopy[1].x, y: polygonPointsCopy[0].y, z: 0 }));
 
-            // console.log('Final polygon points before adding to state:', polygonPoints);
-
-            // console.log('Final polygon points before adding to state:', polygonPoints.map(p => ({ x: p.x, y: p.y, z: p.z })));
+            const newEntry = {
+                table0: polygonPointsCopy[0].x,
+                table1: polygonPointsCopy[0].y,
+                table2: endCoords.x,
+                table3: endCoords.y,
+            };
         
-            const newPolygonPoints = polygonPoints.map(p => ({ x: p.x, y: p.y, z: p.z }));
-            setNoGoZones(prev => [...prev, { points: newPolygonPoints }]);
+            let existingData = {};
+            try {
+                existingData = jsyaml.load(yamlLog) || { number_of_sub_maps: 0, vo: {} };
+            } catch (error) {
+                console.error("Error loading YAML:", error);
+                existingData = { number_of_sub_maps: 0, vo: {} }; 
+            }
+        
+            const newKey = `vo_${existingData.number_of_sub_maps}`;
+            existingData.vo[newKey] = { submap_0: newEntry };
+            existingData.number_of_sub_maps += 1;
+        
 
+            try {
+                const updatedYaml = jsyaml.dump(existingData);
+                setYamlLog(updatedYaml);
+            } catch (error) {
+                console.error('Failed to update YAML:', error);
+            }
             
         
             isDrawingPolygon = false;
@@ -191,8 +211,11 @@ const useMapEventListeners = (
         goalPublisher,
         setGoalPose,
         setPath,
+        noGoZones,
         setNoGoZones,
-        setPolygonMarkers
+        setPolygonMarkers,
+        yamlLog,
+        setYamlLog
     ]);
 };
 
