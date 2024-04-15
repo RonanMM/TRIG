@@ -1,6 +1,7 @@
 
 
 
+
 import { useEffect, useState } from 'react';
 import jsyaml from 'js-yaml';
 
@@ -19,13 +20,38 @@ const useMapEventListeners = (
     setNoGoZones,
     setPolygonMarkers,
     yamlLog,
-    setYamlLog
+    setYamlLog,
+    endPolygonState,
+    setEndPolygonState
 ) => {
+
+    const [currentPoints, setCurrentPoints] = useState([]);
 
     const [polygonCounter, setPolygonCounter] = useState(0);
 
-    
 
+
+    useEffect(() => {
+        if (endPolygonState) {
+            finalizePolygon();
+            setEndPolygonState(false); 
+        }
+    }, [endPolygonState, currentPoints, yamlLog, polygonCounter]);
+
+        
+    const finalizePolygon = () => {
+        setCurrentPoints(currentPoints => {
+            updateYAML(currentPoints, true);  
+            return [];  
+        });
+    };
+
+
+    const updateYAML = (points) => {
+        let existingData = jsyaml.load(yamlLog) || { numberOfSubMaps: 1, vo: { submap_0: {} } };
+        
+        setYamlLog(jsyaml.dump(existingData));
+    };
 
     useEffect(() => {
         const mapViewElement = document.getElementById('mapView');
@@ -33,7 +59,6 @@ const useMapEventListeners = (
             console.error('Map view element not found');
             return;
         }
-
 
         const handleZoom = (event) => {
             event.preventDefault();
@@ -46,10 +71,20 @@ const useMapEventListeners = (
             }
         };
 
-
-
-
-
+        const handleGoalSetting = (event) => {
+            if (interactionMode !== 'SETTING_GOAL') return;
+            const rect = mapViewElement.getBoundingClientRect();
+            const pixelX = event.clientX - rect.left;
+            const pixelY = event.clientY - rect.top;
+            const coords = viewerRef.current.scene.globalToRos(pixelX, pixelY);
+            const goal = new window.ROSLIB.Message({
+                header: { stamp: { secs: 0, nsecs: 0 }, frame_id: 'map' },
+                pose: { position: { x: coords.x, y: coords.y, z: 0 }, orientation: { x: 0, y: 0, z: 0, w: 1 } }
+            });
+            goalPublisher.publish(goal);
+            setGoalPose({ x: coords.x, y: coords.y });
+            setPath(null);
+        };
 
         let isPanning = false;
         let startingPosition = { x: 0, y: 0 };
@@ -77,105 +112,44 @@ const useMapEventListeners = (
         };
 
 
-
-        const handleGoalSetting = (event) => {
-            if (interactionMode !== 'SETTING_GOAL') return;
-            if (!goalPublisher || !mapData.resolution) return;
-            const rect = mapViewElement.getBoundingClientRect();
-            const pixelX = event.clientX - rect.left;
-            const pixelY = event.clientY - rect.top;
-            const localCoords = viewerRef.current.scene.globalToRos(pixelX, pixelY);
-            const goal = new window.ROSLIB.Message({
-                header: { stamp: { secs: 0, nsecs: 0 }, frame_id: 'map' },
-                pose: { position: { x: localCoords.x, y: localCoords.y, z: 0 }, orientation: { x: 0, y: 0, z: 0, w: 1 } }
-            });
-
-            goalPublisher.publish(goal);
-            setGoalPose({ x: localCoords.x, y: localCoords.y });
-            setPath(null);
-        };
-
-
-
-
-
-        let isDrawingPolygon = false;
-        let polygonPoints = [];
-        let polygonPointsCopy = [];
-
         const startPolygon = (event) => {
             if (interactionMode !== 'DRAWING_POLYGON' || !isHovering) return;
-            isDrawingPolygon = true;
-
             const rect = mapViewElement.getBoundingClientRect();
             const pixelX = event.clientX - rect.left;
             const pixelY = event.clientY - rect.top;
-            const startCoords = viewerRef.current.scene.globalToRos(pixelX, pixelY);
-            polygonPoints = [new window.ROSLIB.Vector3({ x: startCoords.x, y: startCoords.y, z: 0 })];
-            polygonPointsCopy = [startCoords];
-
-            console.log('Starting polygon:', polygonPoints);
-
-            event.preventDefault();
+            const coords = viewerRef.current.scene.globalToRos(pixelX, pixelY);
+        
+            setCurrentPoints(currentPoints => {
+                const updatedPoints = [...currentPoints, coords];
+                updateYAML(updatedPoints, false);  
+                return updatedPoints;
+            });
         };
 
-
-        // };
-
-        const endPolygon = (event) => {
-            if (!isDrawingPolygon) return;
-            const rect = mapViewElement.getBoundingClientRect();
-            const pixelX = event.clientX - rect.left;
-            const pixelY = event.clientY - rect.top;
-            const endCoords = viewerRef.current.scene.globalToRos(pixelX, pixelY);
-            polygonPointsCopy.push(endCoords);
-
-            const corners = [
-                [polygonPointsCopy[0].x, polygonPointsCopy[0].y, 0.0],
-                [endCoords.x, polygonPointsCopy[0].y, 0.0],
-                [endCoords.x, endCoords.y, 0.0],
-                [polygonPointsCopy[0].x, endCoords.y, 0.0]
-            ];
-
+        const updateYAML = (points, finalize) => {
             let existingData = {};
             try {
                 existingData = jsyaml.load(yamlLog) || { numberOfSubMaps: 1, vo: { submap_0: {} } };
             } catch (error) {
-                console.error("Error loading YAML:", error);
+                console.error("Error parsing YAML", error);
                 existingData = { numberOfSubMaps: 1, vo: { submap_0: {} } };
             }
+        
+            if (finalize) {
 
-            const obstacleLabel = `obstacle${polygonCounter}`;
+                polygonCounter++; 
+            } else {
 
-            let counter = Object.keys(existingData.vo.submap_0).length;
-            corners.forEach((corner, index) => {
-                const key = `vo_${(counter + index).toString().padStart(4, '0')}`;
-                existingData.vo.submap_0[key] = ["submap_0", obstacleLabel, ...corner];
-            });
-
-            setPolygonCounter(polygonCounter + 1); // Update the polygon counter
-
-            try {
-                const updatedYaml = jsyaml.dump(existingData);
-                setYamlLog(updatedYaml);
-            } catch (error) {
-                console.error('Failed to update YAML:', error);
+                const obstacleKey = `obstacle${polygonCounter}`;
+                points.forEach((point, index) => {
+                    const key = `vo_${polygonCounter * 1000 + index}`;
+                    existingData.vo.submap_0[key] = ["submap_0", obstacleKey, point.x, point.y, 0.0];
+                });
+                console.log("Temporary polygon points", points);
             }
-
-            isDrawingPolygon = false;
-            polygonPoints = [];
-            polygonPointsCopy = [];
+        
+            setYamlLog(jsyaml.dump(existingData));
         };
-        
-        
-        
-        
-        
-        
-
-
-
-        
 
         mapViewElement.addEventListener('wheel', handleZoom);
         mapViewElement.addEventListener('click', handleGoalSetting);
@@ -183,7 +157,7 @@ const useMapEventListeners = (
         mapViewElement.addEventListener('mouseleave', () => {
             setIsHovering(false);
             endPan();
-            endPolygon();
+
         });
 
         if (interactionMode === 'PANNING') {
@@ -193,8 +167,7 @@ const useMapEventListeners = (
             mapViewElement.addEventListener('mouseleave', endPan);
         } else if (interactionMode === 'DRAWING_POLYGON') {
             mapViewElement.addEventListener('mousedown', startPolygon);
-            mapViewElement.addEventListener('mouseup', endPolygon);
-            mapViewElement.addEventListener('mouseleave', endPolygon);
+
         }
 
         return () => {
@@ -207,8 +180,7 @@ const useMapEventListeners = (
             mapViewElement.removeEventListener('mouseup', endPan);
             mapViewElement.removeEventListener('mouseleave', endPan);
             mapViewElement.removeEventListener('mousedown', startPolygon);
-            mapViewElement.removeEventListener('mouseup', endPolygon);
-            mapViewElement.removeEventListener('mouseleave', endPolygon);
+
         }
     }, [
         viewerRef,
@@ -227,8 +199,19 @@ const useMapEventListeners = (
         yamlLog,
         setYamlLog,
         polygonCounter, 
-        setPolygonCounter
+        setPolygonCounter,
+        endPolygonState,
+        setEndPolygonState
     ]);
+
+    useEffect(() => {
+        if (endPolygonState) {
+            setPolygonCounter(polygonCounter + 1); 
+
+            setEndPolygonState(false); 
+        }
+    }, [endPolygonState, polygonCounter, setEndPolygonState]);
 };
 
 export default useMapEventListeners;
+

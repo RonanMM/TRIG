@@ -1,7 +1,7 @@
 
 
 import ROSLIB from "roslib";
-// import ROS2D from "ros2d";
+
 
 export function getRotationFromQuaternion(q) {
     const yaw = Math.atan2(2 * (q.w * q.z + q.x * q.y), 1 - 2 * (q.y * q.y + q.z * q.z));
@@ -24,7 +24,7 @@ let currentPolygonMarker = null;
 export function addGoalMarker(viewer, goalX, goalY) {
 
     if (!viewer || !viewer.scene) {
-        console.error("Viewer or its scene is not initialized.");
+        console.error("viewer or its scene is not initialized");
         return;
     }
 

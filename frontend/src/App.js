@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import RosbridgeStatus from "./RosbridgeStatus";
-import RosMapSubscriber from "./RosMapSubscriber"; // Import the RosMapSubscriber component
+import RosMapSubscriber from "./RosMapSubscriber"; 
 
 const App = () => {
     const [currentPage, setCurrentPage] = useState('home');
@@ -21,7 +21,7 @@ const App = () => {
                 <div>
                     <h1>Tiago Robot Interface GUI</h1>
                     <button onClick={navigateToStatus}>Go to Status Page</button>
-                    <RosMapSubscriber /> {/* Include the map subscriber */}
+                    <RosMapSubscriber /> 
 
                 </div>
             )}

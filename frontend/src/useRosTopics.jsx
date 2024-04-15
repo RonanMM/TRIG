@@ -6,9 +6,9 @@ import { getRotationFromQuaternion } from './utils';
 
 const useRosTopics = (ros, viewer, setMapData, setRobotPose, setIsHovering, setGoalPublisher, setPath) => {
   useEffect(() => {
-    const onConnection = () => console.log('Connected to ROS bridge.');
+    const onConnection = () => console.log('Connected to ROS bridge');
     const onError = (error) => console.error('Error connecting to ROS bridge:', error);
-    const onClose = () => console.log('Connection to ROS bridge closed.');
+    const onClose = () => console.log('Connection to ROS bridge closed');
 
     ros.on('connection', onConnection);
     ros.on('error', onError);
@@ -35,7 +35,7 @@ const useRosTopics = (ros, viewer, setMapData, setRobotPose, setIsHovering, setG
     });
 
     mapTopic.subscribe((message) => {
-      console.log('Received map data:', message);
+      console.log('received map data:', message);
       setMapData({
         aspectRatio: message.info.width / message.info.height,
         resolution: message.info.resolution,
@@ -67,18 +67,18 @@ const useRosTopics = (ros, viewer, setMapData, setRobotPose, setIsHovering, setG
 
     pathTopic.subscribe((message) => {
       if (!message || !message.pose) {
-          console.error("Received undefined or incorrect path data:", message);
+          console.error("received incorrect path data", message);
           setPath(message);
           return;
       }
-      console.log("Received valid path data:", message);
+      console.log("received correct path data", message);
       setPath(message);
   });
 
     return () => {
       mapTopic.unsubscribe();
       pathTopic.unsubscribe();
-      console.log("Unsubscribed from map and path topics");
+      console.log("unsubscribed from map and path topics");
     };
   }, [viewer, setMapData, ros, setPath]);
 
@@ -105,7 +105,7 @@ const useRosTopics = (ros, viewer, setMapData, setRobotPose, setIsHovering, setG
         if (!activeTopic) {
 
             activeTopic = topic;
-            console.log(`Active topic set to ${topic}`);
+            console.log(`topic set to ${topic}`);
         }
 
         if (activeTopic !== topic) return; 
@@ -114,7 +114,7 @@ const useRosTopics = (ros, viewer, setMapData, setRobotPose, setIsHovering, setG
 
         
         if (topic === '/robot_pose' && (now - lastUpdateTime < 700)) {  
-          console.log('Update from robot_pose skipped due to throttle');
+          console.log('throttle skip');
           return;
       }
 
@@ -127,7 +127,7 @@ const useRosTopics = (ros, viewer, setMapData, setRobotPose, setIsHovering, setG
                 y: position.y,
                 rotation: rotation
             });
-            console.log(`Pose updated from ${topic}:`, message);
+           
         });
     };
 
@@ -139,7 +139,7 @@ const useRosTopics = (ros, viewer, setMapData, setRobotPose, setIsHovering, setG
 
         amclPoseTopic.unsubscribe();
         robotPoseTopic.unsubscribe();
-        console.log('Unsubscribed from both pose topics.');
+        console.log('unsubscribed from both topics');
     };
 
 }, [ros, setRobotPose]);

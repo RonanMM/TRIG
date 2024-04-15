@@ -25,6 +25,7 @@ const RosMapSubscriber = () => {
     const [noGoZones, setNoGoZones] = useState([]);
     const [polygonMarkers, setPolygonMarkers] = useState([]);
     const [yamlLog, setYamlLog] = useState([]);
+    const [endPolygonState, setEndPolygonState] = useState(false);
 
 
     const ros = useStableRosConnection('ws://localhost:9090');
@@ -55,6 +56,9 @@ const RosMapSubscriber = () => {
         setPolygonMarkers,
         yamlLog,
         setYamlLog,
+        endPolygonState,
+        setEndPolygonState
+
         
     );
 
@@ -93,8 +97,6 @@ const RosMapSubscriber = () => {
         if (viewer.current && goalPose.x !== null && goalPose.y !== null) {
             addGoalMarker(viewer.current, goalPose.x, goalPose.y);
         }
-
-
     }, [viewer, robotPose, path, viewer, goalPose]);
 
 
@@ -117,7 +119,6 @@ const RosMapSubscriber = () => {
                             obstacles[obstacleId].push({ x: value[2], y: value[3] });
                         }
                     });
-
                     Object.values(obstacles).forEach(points => {
                         if (points.length > 0) {
                             newNoGoZones.push({ points });
@@ -125,10 +126,10 @@ const RosMapSubscriber = () => {
                     });
     
                     setNoGoZones(newNoGoZones);
-                    console.log("New no go zones:", newNoGoZones);
+                    console.log("new zones", newNoGoZones);
                 }
             } catch (error) {
-                console.error('Failed to parse YAML:', error);
+                console.error('Failed to parse YAML', error);
             }
         }
     }, [yamlLog]);
@@ -137,8 +138,6 @@ const RosMapSubscriber = () => {
 
 
     useEffect(() => {
-
-
         if (viewer.current && window.ROS2D && noGoZones.length > 0) {
 
             noGoZoneShapes.current.forEach(shape => viewer.current.scene.removeChild(shape));
@@ -160,7 +159,7 @@ const RosMapSubscriber = () => {
                 noGoZoneShapes.current.push(noGoZoneShape); 
             });
 
-            console.log('Drawing no go zones:', noGoZones);
+            console.log('Drawing no go zones', noGoZones);
         }
     }, [noGoZones, viewer]);
 
@@ -188,6 +187,10 @@ const RosMapSubscriber = () => {
                         <button className={`button ${interactionMode === 'DRAWING_POLYGON' ? 'active' : ''}`} onClick={() => setInteractionMode('DRAWING_POLYGON')}>
                             🖍 Draw Polygon
                         </button>
+                        <button className='button' onClick={() => setEndPolygonState(true)}>
+                            End Polygon
+                        </button>
+
                     </div>
                     <textarea
                         className="yaml-input"
@@ -204,5 +207,6 @@ const RosMapSubscriber = () => {
         </div>
     );
 };
+
 
 export default RosMapSubscriber;
