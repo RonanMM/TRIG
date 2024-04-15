@@ -1,7 +1,7 @@
 
 
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import jsyaml from 'js-yaml';
 
 const useMapEventListeners = (
@@ -21,6 +21,11 @@ const useMapEventListeners = (
     yamlLog,
     setYamlLog
 ) => {
+
+    const [polygonCounter, setPolygonCounter] = useState(0);
+
+    
+
 
     useEffect(() => {
         const mapViewElement = document.getElementById('mapView');
@@ -114,6 +119,9 @@ const useMapEventListeners = (
             event.preventDefault();
         };
 
+
+        // };
+
         const endPolygon = (event) => {
             if (!isDrawingPolygon) return;
             const rect = mapViewElement.getBoundingClientRect();
@@ -122,31 +130,30 @@ const useMapEventListeners = (
             const endCoords = viewerRef.current.scene.globalToRos(pixelX, pixelY);
             polygonPointsCopy.push(endCoords);
 
-            polygonPoints.push(new window.ROSLIB.Vector3({ x: polygonPointsCopy[0].x, y: polygonPointsCopy[1].y, z: 0 }));
+            const corners = [
+                [polygonPointsCopy[0].x, polygonPointsCopy[0].y, 0.0],
+                [endCoords.x, polygonPointsCopy[0].y, 0.0],
+                [endCoords.x, endCoords.y, 0.0],
+                [polygonPointsCopy[0].x, endCoords.y, 0.0]
+            ];
 
-            polygonPoints.push(new window.ROSLIB.Vector3({ x: endCoords.x, y: endCoords.y, z: 0 }));
-
-            polygonPoints.push(new window.ROSLIB.Vector3({ x: polygonPointsCopy[1].x, y: polygonPointsCopy[0].y, z: 0 }));
-
-            const newEntry = {
-                table0: polygonPointsCopy[0].x,
-                table1: polygonPointsCopy[0].y,
-                table2: endCoords.x,
-                table3: endCoords.y,
-            };
-        
             let existingData = {};
             try {
-                existingData = jsyaml.load(yamlLog) || { number_of_sub_maps: 0, vo: {} };
+                existingData = jsyaml.load(yamlLog) || { numberOfSubMaps: 1, vo: { submap_0: {} } };
             } catch (error) {
                 console.error("Error loading YAML:", error);
-                existingData = { number_of_sub_maps: 0, vo: {} }; 
+                existingData = { numberOfSubMaps: 1, vo: { submap_0: {} } };
             }
-        
-            const newKey = `vo_${existingData.number_of_sub_maps}`;
-            existingData.vo[newKey] = { submap_0: newEntry };
-            existingData.number_of_sub_maps += 1;
-        
+
+            const obstacleLabel = `obstacle${polygonCounter}`;
+
+            let counter = Object.keys(existingData.vo.submap_0).length;
+            corners.forEach((corner, index) => {
+                const key = `vo_${(counter + index).toString().padStart(4, '0')}`;
+                existingData.vo.submap_0[key] = ["submap_0", obstacleLabel, ...corner];
+            });
+
+            setPolygonCounter(polygonCounter + 1); // Update the polygon counter
 
             try {
                 const updatedYaml = jsyaml.dump(existingData);
@@ -154,13 +161,16 @@ const useMapEventListeners = (
             } catch (error) {
                 console.error('Failed to update YAML:', error);
             }
-            
-        
+
             isDrawingPolygon = false;
             polygonPoints = [];
             polygonPointsCopy = [];
-
         };
+        
+        
+        
+        
+        
         
 
 
@@ -215,7 +225,9 @@ const useMapEventListeners = (
         setNoGoZones,
         setPolygonMarkers,
         yamlLog,
-        setYamlLog
+        setYamlLog,
+        polygonCounter, 
+        setPolygonCounter
     ]);
 };
 

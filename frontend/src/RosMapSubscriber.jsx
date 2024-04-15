@@ -26,6 +26,7 @@ const RosMapSubscriber = () => {
     const [polygonMarkers, setPolygonMarkers] = useState([]);
     const [yamlLog, setYamlLog] = useState([]);
 
+
     const ros = useStableRosConnection('ws://localhost:9090');
 
     useRosTopics(
@@ -53,7 +54,8 @@ const RosMapSubscriber = () => {
         setNoGoZones,
         setPolygonMarkers,
         yamlLog,
-        setYamlLog
+        setYamlLog,
+        
     );
 
     useEffect(() => {
@@ -95,34 +97,43 @@ const RosMapSubscriber = () => {
 
     }, [viewer, robotPose, path, viewer, goalPose]);
 
+
     useEffect(() => {
-        if (yamlLog.length >0) { 
+        if (yamlLog.length > 0) { 
             try {
                 const newYamlObject = jsyaml.load(yamlLog);
-                const newNoGoZones = [];
+                if (newYamlObject.vo && newYamlObject.vo.submap_0) {
+                    const entries = Object.entries(newYamlObject.vo.submap_0);
+                    const newNoGoZones = [];
     
-                Object.values(newYamlObject.vo).forEach(voEntry => {
-                    const submap = voEntry.submap_0; 
-                    const x1 = submap.table0, y1 = submap.table1;
-                    const x2 = submap.table2, y2 = submap.table3;
-                    const points = [];
+
+                    const obstacles = {};
+                    entries.forEach(([key, value]) => {
+                        if (value && value.length >= 5) {
+                            const obstacleId = value[1]; 
+                            if (!obstacles[obstacleId]) {
+                                obstacles[obstacleId] = [];
+                            }
+                            obstacles[obstacleId].push({ x: value[2], y: value[3] });
+                        }
+                    });
+
+                    Object.values(obstacles).forEach(points => {
+                        if (points.length > 0) {
+                            newNoGoZones.push({ points });
+                        }
+                    });
     
-                    
-                    points.push({ x: x1, y: y1, z: 0 }); 
-                    points.push({ x: x2, y: y1, z: 0 }); 
-                    points.push({ x: x2, y: y2, z: 0 }); 
-                    points.push({ x: x1, y: y2, z: 0 }); 
-    
-                    newNoGoZones.push({ points });
-                });
-    
-                setNoGoZones(newNoGoZones);
-                console.log("New no go zones:", newNoGoZones);
+                    setNoGoZones(newNoGoZones);
+                    console.log("New no go zones:", newNoGoZones);
+                }
             } catch (error) {
                 console.error('Failed to parse YAML:', error);
             }
         }
     }, [yamlLog]);
+    
+    
 
 
     useEffect(() => {
@@ -152,6 +163,8 @@ const RosMapSubscriber = () => {
             console.log('Drawing no go zones:', noGoZones);
         }
     }, [noGoZones, viewer]);
+
+
 
 
     return (
