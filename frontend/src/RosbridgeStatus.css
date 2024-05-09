@@ -24,19 +24,25 @@ h1 {
 }
 
 .status-header.connected {
-    background-color: #dff0d8; /* Green */
+    background-color: #dff0d8; 
     color: #3c763d;
     border-color: #d6e9c6;
 }
 
+.status-header.not-receiving{
+    background-color: #f2dede; 
+    color: #a94442;
+    border-color: #ebccd1;
+}
+
 .status-header.error {
-    background-color: #f2dede; /* Red */
+    background-color: #f2dede; 
     color: #a94442;
     border-color: #ebccd1;
 }
 
 .status-header.disconnected {
-    background-color: #fcf8e3; /* Yellow */
+    background-color: #fcf8e3; 
     color: #8a6d3b;
     border-color: #faebcc;
 }
@@ -65,3 +71,17 @@ h1 {
 .status-indicator.error {
     background-color: #ffc107;
 }
+
+.status-indicator.not-receiving {
+    background-color: #f0ad4e; 
+}
+
+.latency-display {
+    font-weight: bold;
+    color: #333;
+    background-color: #f0f0f0;
+    padding: 10px;
+    margin-bottom: 20px; 
+    border: 1px solid #ccc;
+}
+

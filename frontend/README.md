@@ -68,3 +68,16 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/d
 ### `npm run build` fails to minify
 
 This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+
+
+
+COMMMANDS
+singularity run --nv tiago_noetic_opensource.sif local
+
+roslaunch rosbridge_server rosbridge_websocket.launch
+
+roslaunch tiago_2dnav_gazebo tiago_navigation.launch public_sim:=true world:=simple_office
+roslaunch tiago_2dnav_gazebo tiago_mapping.launch public_sim:=true
+
+roslaunch tiago_2dnav_gazebo tiago_mapping.launch public_sim:=true (amcl data is broken)
+
